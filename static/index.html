@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0F172A">
+<title>Drishti AI | Security Operations Center</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        background: '#0F172A',
+        sidebar: '#111827',
+        primary: '#3B82F6',
+        success: '#10B981',
+        warning: '#F59E0B',
+        danger: '#EF4444',
+        surface: '#1E293B'
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif']
+      }
+    }
+  }
+}
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #0F172A;
+  --sidebar: #111827;
+  --card: rgba(30,41,59,.72);
+  --border: rgba(255,255,255,.075);
+  --muted: #94A3B8;
+  --blue: #3B82F6;
+  --green: #10B981;
+  --yellow: #F59E0B;
+  --red: #EF4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: #E2E8F0;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+button, input, select { font: inherit; }
+
+::selection { background: #3B82F6; color: white; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0F172A; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+.glass {
+  background: rgba(30,41,59,.72);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all .25s ease;
+}
+
+.card:hover {
+  border-color: rgba(96,165,250,.3);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.16);
+}
+
+.sidebar {
+  background: #111827;
+  border-right: 1px solid var(--border);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  color: #94A3B8;
+  font-size: 13px;
+  font-weight: 500;
+  transition: .2s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  color: white;
+  background: rgba(255,255,255,.055);
+}
+
+.nav-item.active {
+  background: rgba(59,130,246,.14);
+  color: #60A5FA;
+  border: 1px solid rgba(59,130,246,.18);
+}
+
+.nav-item.active i { color: #60A5FA; }
+
+.hero {
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(59,130,246,.24), transparent 45%),
+    radial-gradient(ellipse at 20% 100%, rgba(16,185,129,.12), transparent 50%),
+    linear-gradient(120deg,#172554,#111D36 60%,#14213A);
+  border: 1px solid rgba(96,165,250,.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border: 1px solid rgba(96,165,250,.12);
+  border-radius: 50%;
+  right: -80px;
+  top: -180px;
+  box-shadow: 0 0 0 35px rgba(96,165,250,.025),
+              0 0 0 75px rgba(96,165,250,.02);
+  pointer-events: none;
+}
+
+.hero-content { position: relative; z-index: 1; }
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
+  box-shadow: 0 0 10px #10B981;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
+.metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-value {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
+}
+
+.muted { color: var(--muted); }
+
+.section-heading {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -.3px;
+}
+
+.section-subtitle {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+.zone-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 110px;
+}
+
+.zone-card::after {
+  content: "";
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  right: -30px;
+  bottom: -30px;
+  background: currentColor;
+  opacity: .035;
+}
+
+.risk-safe { color: #10B981; }
+.risk-moderate { color: #F59E0B; }
+.risk-critical { color: #EF4444; }
+
+.risk-bar {
+  height: 4px;
+  background: #334155;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.risk-fill {
+  height: 100%;
+  border-radius: 10px;
+}
+
+.camera-preview {
+  height: 145px;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(8,15,28,.2),rgba(8,15,28,.7)),
+    repeating-linear-gradient(0deg,transparent,transparent 29px,rgba(148,163,184,.07) 30px),
+    repeating-linear-gradient(90deg,transparent,transparent 29px,rgba(148,163,184,.07) 30px),
+    #172536;
+}
+
+.camera-preview::before {
+  content: "";
+  position: absolute;
+  width: 130%;
+  height: 1px;
+  top: 50%;
+  left: -15%;
+  background: rgba(16,185,129,.25);
+  animation: scan 4s linear infinite;
+  box-shadow: 0 0 10px rgba(16,185,129,.4);
+}
+
+@keyframes scan {
+  0% { transform: translateY(-70px); }
+  100% { transform: translateY(70px); }
+}
+
+.camera-scene {
+  position: absolute;
+  inset: 0;
+  opacity: .55;
+}
+
+.scene-floor {
+  position: absolute;
+  width: 120%;
+  height: 80px;
+  left: -10%;
+  bottom: -35px;
+  border-top: 1px solid rgba(148,163,184,.25);
+  transform: perspective(120px) rotateX(15deg);
+  background: repeating-linear-gradient(90deg,transparent 0 40px,rgba(148,163,184,.1) 41px 42px);
+}
+
+.person {
+  position: absolute;
+  bottom: 24px;
+  width: 10px;
+  height: 27px;
+  background: rgba(148,163,184,.55);
+  border-radius: 5px 5px 2px 2px;
+}
+
+.person::before {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: inherit;
+  border-radius: 50%;
+  top: -12px;
+  left: .5px;
+}
+
+.person.alert {
+  background: rgba(239,68,68,.8);
+  box-shadow: 0 0 12px rgba(239,68,68,.5);
+}
+
+.detection-box {
+  position: absolute;
+  border: 1px solid #10B981;
+  width: 30px;
+  height: 65px;
+  bottom: 35px;
+  left: 35%;
+  box-shadow: 0 0 8px rgba(16,185,129,.15);
+}
+
+.detection-box.warning { border-color: #F59E0B; }
+.detection-box.danger { border-color: #EF4444; }
+
+.cam-label {
+  position: absolute;
+  font-size: 8px;
+  padding: 3px 5px;
+  background: rgba(16,185,129,.8);
+  color: white;
+  top: -16px;
+  left: -1px;
+  white-space: nowrap;
+}
+
+.live-tag {
+  background: rgba(239,68,68,.15);
+  color: #FCA5A5;
+  border: 1px solid rgba(239,68,68,.25);
+}
+
+.chart-wrap {
+  position: relative;
+  height: 245px;
+  width: 100%;
+}
+
+.chart-wrap.small { height: 215px; }
+
+.incident-row {
+  transition: background .2s;
+}
+
+.incident-row:hover {
+  background: rgba(255,255,255,.035);
+}
+
+.badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.badge-green { color: #6EE7B7; background: rgba(16,185,129,.12); }
+.badge-yellow { color: #FCD34D; background: rgba(245,158,11,.12); }
+.badge-red { color: #FCA5A5; background: rgba(239,68,68,.12); }
+.badge-blue { color: #93C5FD; background: rgba(59,130,246,.12); }
+.badge-gray { color: #CBD5E1; background: rgba(148,163,184,.12); }
+
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  grid-template-rows: repeat(3,80px);
+  gap: 8px;
+  padding: 15px;
+  background:
+    linear-gradient(rgba(15,23,42,.65),rgba(15,23,42,.65)),
+    repeating-linear-gradient(0deg,transparent,transparent 38px,rgba(96,165,250,.09) 39px),
+    repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(96,165,250,.09) 39px),
+    #172B3D;
+  border-radius: 10px;
+  border: 1px solid rgba(96,165,250,.12);
+}
+
+.map-zone {
+  border: 1px solid rgba(16,185,129,.25);
+  background: rgba(16,185,129,.11);
+  border-radius: 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: .2s;
+  font-size: 10px;
+  text-align: center;
+}
+
+.map-zone:hover { transform: scale(1.025); filter: brightness(1.3); }
+.map-zone.moderate { border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.13); }
+.map-zone.critical { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.15); }
+.map-zone.path { background: transparent; border: 1px dashed rgba(148,163,184,.15); }
+
+.insight-card {
+  border-left: 2px solid #3B82F6;
+  background: rgba(59,130,246,.055);
+  transition: .2s;
+}
+.insight-card:hover { background: rgba(59,130,246,.1); }
+
+.progress-track {
+  height: 6px;
+  border-radius: 20px;
+  background: #334155;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width 1s ease;
+}
+
+.dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 45px;
+  z-index: 50;
+  min-width: 190px;
+  background: #1E293B;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px;
+  box-shadow: 0 15px 35px rgba(0,0,0,.35);
+}
+
+.dropdown.show { display: block; }
+
+.dropdown button {
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #CBD5E1;
+}
+
+.dropdown button:hover { background: rgba(255,255,255,.07); }
+
+.notification-panel {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 45px;
+  z-index: 50;
+  width: 300px;
+  background: #1E293B;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0,0,0,.35);
+}
+
+.notification-panel.show { display: block; }
+
+.mobile-overlay { display: none; }
+
+@media(max-width:1100px) {
+  .metric-value { font-size: 25px; }
+}
+
+@media(max-width:768px) {
+  #sidebar {
+    position: fixed;
+    left: -270px;
+    top: 0;
+    bottom: 0;
+    width: 255px;
+    z-index: 100;
+    transition: left .25s;
+  }
+  #sidebar.open { left: 0; }
+  .mobile-overlay.show {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 90;
+  }
+  #main { margin-left: 0 !important; }
+  .hero { padding: 22px !important; }
+  .hero h1 { font-size: 23px; }
+  .map-grid { grid-template-rows: repeat(3,70px); }
+  .chart-wrap { height: 220px; }
+}
+
+@media(max-width:480px) {
+  .metric-value { font-size: 24px; }
+  .camera-preview { height: 130px; }
+  .map-grid { gap: 5px; padding: 8px; }
+  .map-zone { font-size: 8px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar" class="sidebar fixed top-0 left-0 bottom-0 w-[250px] flex flex-col z-50">
+
+  <div class="px-6 pt-6 pb-7">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+        <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+      </div>
+      <div>
+        <div class="font-bold text-[19px] tracking-tight text-white">Drishti<span class="text-blue-400"> AI</span></div>
+        <div class="text-[9px] tracking-[2px] text-slate-500 font-semibold">CAMPUS INTELLIGENCE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-4 mb-3">
+    <div class="text-[10px] font-semibold text-slate-600 uppercase tracking-[1.5px] px-3 mb-3">Workspace</div>
+
+    <nav class="space-y-1">
+      <a href="#dashboard" class="nav-item active" data-section="dashboard">
+        <i data-lucide="layout-dashboard" class="w-[17px] h-[17px]"></i> Dashboard
+      </a>
+      <a href="#live-monitoring" class="nav-item" data-section="live-monitoring">
+        <i data-lucide="monitor-play" class="w-[17px] h-[17px]"></i> Live Monitoring
+        <span class="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+      </a>
+      <a href="#cameras" class="nav-item" data-section="cameras">
+        <i data-lucide="camera" class="w-[17px] h-[17px]"></i> Cameras
+      </a>
+      <a href="#incidents" class="nav-item" data-section="incidents">
+        <i data-lucide="siren" class="w-[17px] h-[17px]"></i> Incidents
+        <span class="ml-auto text-[10px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded">7</span>
+      </a>
+      <a href="#analytics" class="nav-item" data-section="analytics">
+        <i data-lucide="chart-no-axes-combined" class="w-[17px] h-[17px]"></i> Risk Analytics
+      </a>
+      <a href="#campus-map" class="nav-item" data-section="campus-map">
+        <i data-lucide="map" class="w-[17px] h-[17px]"></i> Campus Map
+      </a>
+      <a href="#reports" class="nav-item" data-section="reports">
+        <i data-lucide="file-chart-column" class="w-[17px] h-[17px]"></i> Reports
+      </a>
+    </nav>
+  </div>
+
+  <div class="px-4 mt-5">
+    <div class="text-[10px] font-semibold text-slate-600 uppercase tracking-[1.5px] px-3 mb-3">Management</div>
+    <nav class="space-y-1">
+      <a href="#system-health" class="nav-item" data-section="system-health">
+        <i data-lucide="settings" class="w-[17px] h-[17px]"></i> Settings
+      </a>
+    </nav>
+  </div>
+
+  <div class="mt-auto p-4">
+    <div class="glass rounded-xl p-3 mb-4">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-[10px] font-semibold text-slate-400">AI ENGINE</span>
+        <span class="badge badge-green">Operational</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="status-dot"></span>
+        <span class="text-xs text-slate-300">All systems running</span>
+      </div>
+      <div class="mt-3 h-1 bg-slate-700 rounded-full overflow-hidden">
+        <div class="h-full bg-emerald-500 rounded-full" style="width:98%"></div>
+      </div>
+      <div class="text-[10px] text-slate-500 mt-2">Platform uptime: 99.98%</div>
+    </div>
+
+    <a href="#" class="nav-item text-slate-500 hover:text-red-400" onclick="logout(event)">
+      <i data-lucide="log-out" class="w-[17px] h-[17px]"></i> Logout
+    </a>
+
+    <div class="border-t border-white/5 mt-3 pt-4 px-3 text-[10px] text-slate-600">
+      Drishti AI v1.0.0 · Enterprise
+    </div>
+  </div>
+</aside>
+
+
+<!-- MAIN CONTENT -->
+<main id="main" class="ml-[250px] min-h-screen">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-40 h-[70px] glass border-b border-white/5 px-5 md:px-8 flex items-center justify-between gap-4">
+
+    <div class="flex items-center gap-3 min-w-0">
+      <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative">
+        <button onclick="toggleCollege()" class="flex items-center gap-2 text-sm font-semibold hover:text-blue-400 transition">
+          <i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i>
+          <span class="hidden sm:inline">SSIPMT Raipur</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
+        </button>
+        <div id="collegeDropdown" class="dropdown">
+          <div class="text-[10px] text-slate-500 px-3 py-2 uppercase tracking-wider">Select Institution</div>
+          <button onclick="selectCollege('SSIPMT Raipur')">SSIPMT Raipur ✓</button>
+          <button onclick="selectCollege('Campus North')">Campus North</button>
+          <button onclick="selectCollege('Campus South')">Campus South</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hidden md:flex flex-1 max-w-[350px] mx-4">
+      <div class="relative w-full">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+        <input id="globalSearch" type="text" placeholder="Search cameras, incidents, locations..."
+          class="w-full bg-slate-800/70 border border-white/5 rounded-lg py-2 pl-10 pr-12 text-xs text-slate-200 outline-none focus:border-blue-500/50 transition"
+          oninput="globalSearch(this.value)">
+        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 border border-white/10 rounded px-1.5 py-1">⌘ K</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+
+      <div class="hidden lg:block text-right">
+        <div id="currentTime" class="text-xs font-semibold text-slate-200 tabular-nums">--:--:--</div>
+        <div id="currentDate" class="text-[10px] text-slate-500">Loading date...</div>
+      </div>
+
+      <div class="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
+        <span class="status-dot"></span>
+        <span class="text-[10px] font-semibold text-emerald-400">System Healthy</span>
+      </div>
+
+      <div class="relative">
+        <button onclick="toggleNotifications()" class="relative w-9 h-9 rounded-lg hover:bg-white/5 flex items-center justify-center text-slate-400">
+          <i data-lucide="bell" class="w-[18px] h-[18px]"></i>
+          <span class="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">7</span>
+        </button>
+
+        <div id="notificationPanel" class="notification-panel">
+          <div class="p-4 border-b border-white/5 flex justify-between">
+            <span class="font-semibold text-sm">Notifications</span>
+            <span class="text-[10px] text-blue-400">7 unread</span>
+          </div>
+          <div class="p-3 space-y-3">
+            <div class="flex gap-3">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 mt-1"></i>
+              <div><p class="text-xs text-slate-200">Unauthorized entry detected</p><p class="text-[10px] text-slate-500">Examination Cell · 2 min ago</p></div>
+            </div>
+            <div class="flex gap-3">
+              <i data-lucide="users" class="w-4 h-4 text-yellow-400 mt-1"></i>
+              <div><p class="text-xs text-slate-200">High crowd density warning</p><p class="text-[10px] text-slate-500">Main Gate · 8 min ago</p></div>
+            </div>
+            <div class="flex gap-3">
+              <i data-lucide="activity" class="w-4 h-4 text-blue-400 mt-1"></i>
+              <div><p class="text-xs text-slate-200">AI engine health check passed</p><p class="text-[10px] text-slate-500">System · 15 min ago</p></div>
+            </div>
+          </div>
+          <button onclick="markRead()" class="w-full text-center text-xs text-blue-400 p-3 border-t border-white/5">Mark all as read</button>
+        </div>
+      </div>
+
+      <div class="relative">
+        <button onclick="toggleProfile()" class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white">AD</div>
+          <div class="hidden sm:block text-left">
+            <div class="text-xs font-semibold text-slate-200">Admin</div>
+            <div class="text-[10px] text-slate-500">Security Officer</div>
+          </div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500 hidden sm:block"></i>
+        </button>
+        <div id="profileDropdown" class="dropdown">
+          <button><i data-lucide="user" class="inline w-3 h-3 mr-2"></i>My Profile</button>
+          <button><i data-lucide="settings" class="inline w-3 h-3 mr-2"></i>Account Settings</button>
+          <button onclick="logout(event)" class="text-red-400"><i data-lucide="log-out" class="inline w-3 h-3 mr-2"></i>Sign Out</button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+
+  <!-- DASHBOARD CONTENT -->
+  <div class="p-5 md:p-8 max-w-[1700px] mx-auto space-y-8">
+
+    <!-- HERO -->
+    <section id="dashboard" class="hero rounded-2xl p-6 md:p-8">
+      <div class="hero-content flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="badge badge-blue uppercase tracking-wider">Security Operations Center</span>
+            <span class="text-[10px] text-slate-500">LIVE OVERVIEW</span>
+          </div>
+          <h1 class="text-2xl md:text-[30px] font-bold tracking-tight text-white">Drishti AI Security Operations Center</h1>
+          <p class="text-sm text-slate-400 mt-2 max-w-[650px] leading-relaxed">
+            Real-time AI-powered campus surveillance and safety intelligence.
+            Transforming existing CCTV infrastructure into an intelligent security network.
+          </p>
+          <div class="flex flex-wrap items-center gap-4 mt-6">
+            <div class="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+              <span class="status-dot"></span>
+              <span class="text-xs font-semibold text-emerald-400">System Operational</span>
+            </div>
+            <div class="text-xs text-slate-400 flex items-center gap-2">
+              <i data-lucide="radio-tower" class="w-4 h-4 text-blue-400"></i>
+              128 connected surveillance endpoints
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row md:flex-col gap-3 min-w-[195px]">
+          <button onclick="simulateLiveAIAlert()" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition shadow-lg shadow-red-600/25">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            Simulate Live AI Alert
+          </button>
+          <button onclick="refreshDashboard()" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-lg shadow-blue-600/20">
+            <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i>
+            Refresh Dashboard
+          </button>
+          <button onclick="window.open('/api/reports/incidents/pdf', '_blank')" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-semibold transition">
+            <i data-lucide="file-down" class="w-4 h-4"></i>
+            Export PDF Report
+          </button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- KPI CARDS -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="section-heading">Campus Security Overview</h2>
+          <p class="section-subtitle">Key performance indicators · Updated just now</p>
+        </div>
+        <span class="text-[10px] text-slate-500 hidden sm:block">TODAY'S PERFORMANCE</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+
+        <div class="card p-4">
+          <div class="flex justify-between items-start">
+            <div class="metric-icon bg-blue-500/10 text-blue-400"><i data-lucide="camera" class="w-5 h-5"></i></div>
+            <span class="text-[10px] text-emerald-400">↑ 4.2%</span>
+          </div>
+          <div class="mt-4 metric-value" data-count="128">128</div>
+          <div class="text-xs font-medium text-slate-300 mt-1">Total Cameras</div>
+          <div class="text-[10px] text-slate-500 mt-1">124 online · 4 offline</div>
+          <svg class="w-full h-9 mt-3" viewBox="0 0 150 35" preserveAspectRatio="none">
+            <path d="M0 27 L15 22 L30 25 L45 14 L60 19 L75 11 L90 15 L105 8 L120 13 L135 4 L150 6" fill="none" stroke="#3B82F6" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex justify-between items-start">
+            <div class="metric-icon bg-red-500/10 text-red-400"><i data-lucide="bell-ring" class="w-5 h-5"></i></div>
+            <span class="text-[10px] text-red-400">↑ 2.1%</span>
+          </div>
+          <div class="mt-4 metric-value" data-count="7">07</div>
+          <div class="text-xs font-medium text-slate-300 mt-1">Active Alerts</div>
+          <div class="text-[10px] text-slate-500 mt-1">3 critical · 4 moderate</div>
+          <svg class="w-full h-9 mt-3" viewBox="0 0 150 35" preserveAspectRatio="none">
+            <path d="M0 26 L15 20 L30 23 L45 9 L60 17 L75 6 L90 19 L105 10 L120 17 L135 8 L150 12" fill="none" stroke="#EF4444" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex justify-between items-start">
+            <div class="metric-icon bg-yellow-500/10 text-yellow-400"><i data-lucide="users" class="w-5 h-5"></i></div>
+            <span class="text-[10px] text-emerald-400">↓ 8.4%</span>
+          </div>
+          <div class="mt-4 metric-value" data-count="14">14</div>
+          <div class="text-xs font-medium text-slate-300 mt-1">Crowd Alerts Today</div>
+          <div class="text-[10px] text-slate-500 mt-1">11 resolved · 3 monitoring</div>
+          <svg class="w-full h-9 mt-3" viewBox="0 0 150 35" preserveAspectRatio="none">
+            <path d="M0 7 L15 13 L30 9 L45 20 L60 14 L75 25 L90 17 L105 22 L120 14 L135 26 L150 24" fill="none" stroke="#F59E0B" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex justify-between items-start">
+            <div class="metric-icon bg-orange-500/10 text-orange-400"><i data-lucide="shield-alert" class="w-5 h-5"></i></div>
+            <span class="text-[10px] text-red-400">↑ 1.8%</span>
+          </div>
+          <div class="mt-4 metric-value" data-count="5">05</div>
+          <div class="text-xs font-medium text-slate-300 mt-1">Unauthorized Entries</div>
+          <div class="text-[10px] text-slate-500 mt-1">2 pending investigation</div>
+          <svg class="w-full h-9 mt-3" viewBox="0 0 150 35" preserveAspectRatio="none">
+            <path d="M0 28 L15 23 L30 26 L45 11 L60 18 L75 8 L90 17 L105 11 L120 17 L135 7 L150 10" fill="none" stroke="#F97316" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex justify-between items-start">
+            <div class="metric-icon bg-purple-500/10 text-purple-400"><i data-lucide="activity" class="w-5 h-5"></i></div>
+            <span class="text-[10px] text-emerald-400">↓ 12.5%</span>
+          </div>
+          <div class="mt-4 metric-value" data-count="2">02</div>
+          <div class="text-xs font-medium text-slate-300 mt-1">Fall Detections</div>
+          <div class="text-[10px] text-slate-500 mt-1">Both incidents reviewed</div>
+          <svg class="w-full h-9 mt-3" viewBox="0 0 150 35" preserveAspectRatio="none">
+            <path d="M0 9 L15 16 L30 12 L45 24 L60 15 L75 28 L90 18 L105 23 L120 17 L135 28 L150 25" fill="none" stroke="#A78BFA" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex justify-between items-start">
+            <div class="metric-icon bg-emerald-500/10 text-emerald-400"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+            <span class="text-[10px] text-emerald-400">↑ 3.1%</span>
+          </div>
+          <div class="mt-4 flex items-baseline gap-1">
+            <span class="metric-value" data-count="92">92</span><span class="text-sm text-slate-500">/100</span>
+          </div>
+          <div class="text-xs font-medium text-slate-300 mt-1">Campus Safety Score</div>
+          <div class="text-[10px] text-slate-500 mt-1">Excellent safety rating</div>
+          <svg class="w-full h-9 mt-3" viewBox="0 0 150 35" preserveAspectRatio="none">
+            <path d="M0 29 L15 23 L30 26 L45 16 L60 19 L75 12 L90 16 L105 7 L120 11 L135 4 L150 3" fill="none" stroke="#10B981" stroke-width="2"/>
+          </svg>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- CAMPUS RISK HEATMAP -->
+    <section id="risk-zones">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h2 class="section-heading">Campus Risk Heatmap</h2>
+          <p class="section-subtitle">AI-calculated risk assessment across monitored campus zones</p>
+        </div>
+        <span class="badge badge-blue"><span class="status-dot"></span> LIVE ASSESSMENT</span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="door-open" class="w-4 h-4 risk-safe"></i>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Main Gate</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-safe">18<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">2 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-emerald-500" style="width:18%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="book-open" class="w-4 h-4 risk-safe"></i>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Library</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-safe">12<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">4 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-emerald-500" style="width:12%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="car-front" class="w-4 h-4 risk-critical"></i>
+            <span class="badge badge-red">Critical</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Parking Area</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-critical">78<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">6 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-red-500" style="width:78%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="building" class="w-4 h-4 risk-moderate"></i>
+            <span class="badge badge-yellow">Moderate</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Hostel A</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-moderate">46<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">8 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-yellow-500" style="width:46%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="building-2" class="w-4 h-4 risk-safe"></i>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Hostel B</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-safe">24<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">8 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-emerald-500" style="width:24%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="graduation-cap" class="w-4 h-4 risk-moderate"></i>
+            <span class="badge badge-yellow">Moderate</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Academic Block</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-moderate">52<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">12 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-yellow-500" style="width:52%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="landmark" class="w-4 h-4 risk-safe"></i>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Admin Building</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-safe">21<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">5 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-emerald-500" style="width:21%"></div></div>
+        </div>
+
+        <div class="card zone-card p-4">
+          <div class="flex justify-between items-center">
+            <i data-lucide="clipboard-list" class="w-4 h-4 risk-moderate"></i>
+            <span class="badge badge-yellow">Moderate</span>
+          </div>
+          <div class="mt-4 text-sm font-semibold text-white">Examination Cell</div>
+          <div class="flex items-end justify-between mt-2">
+            <span class="text-2xl font-bold risk-moderate">61<span class="text-xs">/100</span></span>
+            <span class="text-[10px] text-slate-500">3 Cameras</span>
+          </div>
+          <div class="risk-bar mt-3"><div class="risk-fill bg-yellow-500" style="width:61%"></div></div>
+        </div>
+
+      </div>
+      <div class="flex flex-wrap gap-5 mt-4 text-[10px] text-slate-500">
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 0–30 Safe</span>
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> 31–65 Moderate</span>
+        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span> 66–100 Critical</span>
+      </div>
+    </section>
+
+
+    <!-- LIVE CAMERA MONITORING -->
+    <section id="live-monitoring">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div>
+          <h2 class="section-heading">Live Camera Monitoring</h2>
+          <p class="section-subtitle">AI-enhanced CCTV surveillance · Existing infrastructure integration</p>
+        </div>
+        <div class="flex gap-2 items-center">
+          <span class="badge live-tag"><span class="status-dot" style="background:#EF4444;box-shadow:0 0 8px #EF4444"></span> LIVE FEED</span>
+          <button onclick="toggleCameraFilter()" class="text-xs px-3 py-2 rounded-lg bg-slate-800 border border-white/5 hover:bg-slate-700">
+            <i data-lucide="filter" class="w-3 h-3 inline mr-1"></i> Filter
+          </button>
+        </div>
+      </div>
+
+      <div id="cameraFilter" class="hidden mb-3">
+        <select id="cameraRiskFilter" onchange="filterCameras(this.value)" class="bg-slate-800 border border-white/10 rounded-lg p-2 text-xs text-slate-300">
+          <option value="all">All cameras</option>
+          <option value="safe">Safe</option>
+          <option value="moderate">Moderate</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+
+      <div id="cameraGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+
+        <!-- CAMERA 01 -->
+        <div class="card overflow-hidden camera-card" data-risk="safe">
+          <div class="camera-preview">
+            <div class="camera-scene">
+              <div class="scene-floor"></div>
+              <div class="person" style="left:24%"></div>
+              <div class="person" style="left:47%;height:31px"></div>
+              <div class="person" style="left:70%;height:24px"></div>
+              <div class="detection-box"><span class="cam-label">PERSON 98%</span></div>
+            </div>
+            <div class="absolute top-3 left-3 badge live-tag">● REC</div>
+            <div class="absolute top-3 right-3 text-[9px] bg-black/50 text-white px-2 py-1 rounded">CAM-001</div>
+            <div class="absolute bottom-3 left-3 text-[10px] text-emerald-300 font-medium">AI DETECTION ACTIVE</div>
+            <div class="absolute bottom-3 right-3 text-[9px] text-slate-400">12:45:08</div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Library Entrance</h3>
+              <span class="badge badge-green">Low Risk</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[11px]">
+              <span class="text-slate-500 flex items-center gap-1"><span class="status-dot"></span> Online</span>
+              <span class="text-slate-400">People Count: <b class="text-white">08</b></span>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/5 text-[10px]">
+              <span class="text-slate-500">Last Activity: 12:44 PM</span>
+              <span class="text-emerald-400">Normal Activity</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA 02 -->
+        <div class="card overflow-hidden camera-card" data-risk="moderate">
+          <div class="camera-preview">
+            <div class="camera-scene">
+              <div class="scene-floor"></div>
+              <div class="person" style="left:16%"></div>
+              <div class="person" style="left:28%"></div>
+              <div class="person" style="left:40%"></div>
+              <div class="person" style="left:52%"></div>
+              <div class="person" style="left:64%"></div>
+              <div class="person" style="left:76%"></div>
+              <div class="detection-box warning" style="left:35%;width:90px;height:90px"><span class="cam-label" style="background:#D97706">CROWD 91%</span></div>
+            </div>
+            <div class="absolute top-3 left-3 badge live-tag">● REC</div>
+            <div class="absolute top-3 right-3 text-[9px] bg-black/50 text-white px-2 py-1 rounded">CAM-002</div>
+            <div class="absolute bottom-3 left-3 text-[10px] text-yellow-300 font-medium">CROWD ANALYSIS</div>
+            <div class="absolute bottom-3 right-3 text-[9px] text-slate-400">12:45:08</div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Main Gate</h3>
+              <span class="badge badge-yellow">Moderate Risk</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[11px]">
+              <span class="text-slate-500 flex items-center gap-1"><span class="status-dot"></span> Online</span>
+              <span class="text-slate-400">People Count: <b class="text-white">42</b></span>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/5 text-[10px]">
+              <span class="text-slate-500">Last Activity: 12:44 PM</span>
+              <span class="text-yellow-400">Crowd Warning</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA 03 -->
+        <div class="card overflow-hidden camera-card" data-risk="critical">
+          <div class="camera-preview">
+            <div class="camera-scene">
+              <div class="scene-floor"></div>
+              <div class="person" style="left:20%"></div>
+              <div class="person alert" style="left:45%"></div>
+              <div class="person" style="left:75%"></div>
+              <div class="detection-box danger" style="left:40%;width:38px;height:72px"><span class="cam-label" style="background:#DC2626">RISK 96%</span></div>
+            </div>
+            <div class="absolute top-3 left-3 badge live-tag">● REC</div>
+            <div class="absolute top-3 right-3 text-[9px] bg-black/50 text-white px-2 py-1 rounded">CAM-003</div>
+            <div class="absolute bottom-3 left-3 text-[10px] text-red-300 font-medium">ANOMALY DETECTED</div>
+            <div class="absolute bottom-3 right-3 text-[9px] text-slate-400">12:45:08</div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Parking Lot</h3>
+              <span class="badge badge-red">Critical Risk</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[11px]">
+              <span class="text-slate-500 flex items-center gap-1"><span class="status-dot"></span> Online</span>
+              <span class="text-slate-400">People Count: <b class="text-white">31</b></span>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/5 text-[10px]">
+              <span class="text-slate-500">Last Activity: 12:43 PM</span>
+              <span class="text-red-400">Abnormal Activity</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA 04 -->
+        <div class="card overflow-hidden camera-card" data-risk="safe">
+          <div class="camera-preview">
+            <div class="camera-scene">
+              <div class="scene-floor"></div>
+              <div class="person" style="left:30%"></div>
+              <div class="person" style="left:65%"></div>
+              <div class="detection-box"><span class="cam-label">PERSON 94%</span></div>
+            </div>
+            <div class="absolute top-3 left-3 badge live-tag">● REC</div>
+            <div class="absolute top-3 right-3 text-[9px] bg-black/50 text-white px-2 py-1 rounded">CAM-004</div>
+            <div class="absolute bottom-3 left-3 text-[10px] text-emerald-300 font-medium">ZONE MONITORING</div>
+            <div class="absolute bottom-3 right-3 text-[9px] text-slate-400">12:45:08</div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Hostel Corridor</h3>
+              <span class="badge badge-green">Low Risk</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[11px]">
+              <span class="text-slate-500 flex items-center gap-1"><span class="status-dot"></span> Online</span>
+              <span class="text-slate-400">People Count: <b class="text-white">06</b></span>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/5 text-[10px]">
+              <span class="text-slate-500">Last Activity: 12:42 PM</span>
+              <span class="text-emerald-400">Normal Activity</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA 05 -->
+        <div class="card overflow-hidden camera-card" data-risk="moderate">
+          <div class="camera-preview">
+            <div class="camera-scene">
+              <div class="scene-floor"></div>
+              <div class="person" style="left:18%"></div>
+              <div class="person" style="left:35%"></div>
+              <div class="person" style="left:53%"></div>
+              <div class="person" style="left:75%"></div>
+              <div class="detection-box warning" style="left:48%;width:55px"><span class="cam-label" style="background:#D97706">DENSITY 82%</span></div>
+            </div>
+            <div class="absolute top-3 left-3 badge live-tag">● REC</div>
+            <div class="absolute top-3 right-3 text-[9px] bg-black/50 text-white px-2 py-1 rounded">CAM-005</div>
+            <div class="absolute bottom-3 left-3 text-[10px] text-yellow-300 font-medium">CROWD MONITORING</div>
+            <div class="absolute bottom-3 right-3 text-[9px] text-slate-400">12:45:08</div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Academic Block</h3>
+              <span class="badge badge-yellow">Moderate Risk</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[11px]">
+              <span class="text-slate-500 flex items-center gap-1"><span class="status-dot"></span> Online</span>
+              <span class="text-slate-400">People Count: <b class="text-white">27</b></span>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/5 text-[10px]">
+              <span class="text-slate-500">Last Activity: 12:41 PM</span>
+              <span class="text-yellow-400">Density Warning</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CAMERA 06 -->
+        <div class="card overflow-hidden camera-card" data-risk="safe">
+          <div class="camera-preview">
+            <div class="camera-scene">
+              <div class="scene-floor"></div>
+              <div class="person" style="left:25%"></div>
+              <div class="detection-box"><span class="cam-label">PERSON 97%</span></div>
+            </div>
+            <div class="absolute top-3 left-3 badge live-tag">● REC</div>
+            <div class="absolute top-3 right-3 text-[9px] bg-black/50 text-white px-2 py-1 rounded">CAM-006</div>
+            <div class="absolute bottom-3 left-3 text-[10px] text-emerald-300 font-medium">AI DETECTION ACTIVE</div>
+            <div class="absolute bottom-3 right-3 text-[9px] text-slate-400">12:45:08</div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-semibold">Admin Building</h3>
+              <span class="badge badge-green">Low Risk</span>
+            </div>
+            <div class="flex items-center justify-between mt-3 text-[11px]">
+              <span class="text-slate-500 flex items-center gap-1"><span class="status-dot"></span> Online</span>
+              <span class="text-slate-400">People Count: <b class="text-white">04</b></span>
+            </div>
+            <div class="flex justify-between mt-3 pt-3 border-t border-white/5 text-[10px]">
+              <span class="text-slate-500">Last Activity: 12:40 PM</span>
+              <span class="text-emerald-400">Normal Activity</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- INCIDENT FEED -->
+    <section id="incidents">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h2 class="section-heading">Real-Time Incident Feed</h2>
+          <p class="section-subtitle">AI-generated security events requiring attention</p>
+        </div>
+        <button onclick="acknowledgeAll()" class="text-[11px] text-blue-400 hover:text-blue-300">Acknowledge all</button>
+      </div>
+
+      <div class="card p-4 space-y-3" id="incidentFeed">
+
+        <div class="incident-row flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-lg border border-red-500/10 bg-red-500/[.035]">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-white">Unauthorized Entry Detected</span><span class="badge badge-red">Critical</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Examination Cell · CAM-031 · Restricted zone access</div>
+            <div class="text-[10px] text-slate-600 mt-1">Today, 12:43 PM · AI Confidence: 97.8%</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-12 rounded bg-slate-800 border border-white/5 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-slate-600"></i></div>
+            <span class="badge badge-yellow incident-status">Pending</span>
+          </div>
+        </div>
+
+        <div class="incident-row flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-lg">
+          <div class="w-10 h-10 rounded-lg bg-yellow-500/10 text-yellow-400 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5"></i></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-white">High Crowd Density Warning</span><span class="badge badge-yellow">Moderate</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Main Gate · CAM-002 · Density threshold exceeded</div>
+            <div class="text-[10px] text-slate-600 mt-1">Today, 12:38 PM · AI Confidence: 94.2%</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-12 rounded bg-slate-800 border border-white/5 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-slate-600"></i></div>
+            <span class="badge badge-green incident-status">Monitoring</span>
+          </div>
+        </div>
+
+        <div class="incident-row flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-lg">
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0"><i data-lucide="activity" class="w-5 h-5"></i></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-white">Fall Incident Detected</span><span class="badge badge-red">High</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Hostel A · CAM-018 · Possible fall event</div>
+            <div class="text-[10px] text-slate-600 mt-1">Today, 11:56 AM · AI Confidence: 91.6%</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-12 rounded bg-slate-800 border border-white/5 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-slate-600"></i></div>
+            <span class="badge badge-green incident-status">Resolved</span>
+          </div>
+        </div>
+
+        <div class="incident-row flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-lg">
+          <div class="w-10 h-10 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0"><i data-lucide="footprints" class="w-5 h-5"></i></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2"><span class="text-xs font-semibold text-white">Abnormal Movement Pattern</span><span class="badge badge-yellow">Moderate</span></div>
+            <div class="text-[10px] text-slate-500 mt-1">Parking Area · CAM-003 · Unusual movement pattern</div>
+            <div class="text-[10px] text-slate-600 mt-1">Today, 11:42 AM · AI Confidence: 88.9%</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-14 h-12 rounded bg-slate-800 border border-white/5 flex items-center justify-center"><i data-lucide="image" class="w-5 h-5 text-slate-600"></i></div>
+            <span class="badge badge-yellow incident-status">Investigating</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ANALYTICS -->
+    <section id="analytics">
+      <div class="mb-4">
+        <h2 class="section-heading">Security Analytics & Intelligence</h2>
+        <p class="section-subtitle">Historical patterns and predictive security insights</p>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+
+        <!-- INCIDENT TREND -->
+        <div class="card p-5">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-sm font-semibold">Incident Trend Analysis</h3>
+              <p class="text-[10px] text-slate-500 mt-1">Daily incidents · Last 7 days</p>
+            </div>
+            <span class="badge badge-blue">7 DAYS</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="incidentChart"></canvas>
+          </div>
+        </div>
+
+        <!-- ALERT DISTRIBUTION -->
+        <div class="card p-5">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-sm font-semibold">Alert Distribution</h3>
+              <p class="text-[10px] text-slate-500 mt-1">Classification by incident category</p>
+            </div>
+            <span class="badge badge-blue">TODAY</span>
+          </div>
+          <div class="chart-wrap small">
+            <canvas id="distributionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- CROWD DENSITY -->
+        <div class="card p-5">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-sm font-semibold">Campus Crowd Density</h3>
+              <p class="text-[10px] text-slate-500 mt-1">Estimated people monitored throughout the day</p>
+            </div>
+            <span class="badge badge-yellow">LIVE TREND</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="crowdChart"></canvas>
+          </div>
+        </div>
+
+        <!-- BUILDING RISK -->
+        <div class="card p-5">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-sm font-semibold">Building Risk Comparison</h3>
+              <p class="text-[10px] text-slate-500 mt-1">AI-calculated risk score by campus zone</p>
+            </div>
+            <span class="badge badge-blue">RISK INDEX</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="riskChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- CAMPUS MAP -->
+    <section id="campus-map">
+      <div class="mb-4">
+        <h2 class="section-heading">Campus Map Overview</h2>
+        <p class="section-subtitle">Illustrative spatial view of monitored campus zones and security activity</p>
+      </div>
+
+      <div class="card p-5">
+        <div class="flex flex-wrap justify-between items-center mb-5 gap-3">
+          <div>
+            <div class="text-sm font-semibold">SSIPMT Campus · Security Network</div>
+            <div class="text-[10px] text-slate-500 mt-1">Schematic campus layout · Not a geographic map</div>
+          </div>
+          <div class="flex gap-3 text-[10px] text-slate-400">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Safe</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-yellow-500"></span> Moderate</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Critical</span>
+          </div>
+        </div>
+
+        <div class="map-grid">
+          <div class="map-zone"><i data-lucide="door-open" class="w-4 h-4 text-emerald-400"></i><span>Main Gate</span><span class="text-[9px] text-emerald-400">2 CAM · 0 ALERT</span></div>
+          <div class="map-zone path"><i data-lucide="route" class="w-4 h-4 text-slate-600"></i><span>Access Road</span></div>
+          <div class="map-zone moderate"><i data-lucide="graduation-cap" class="w-4 h-4 text-yellow-400"></i><span>Academic Block</span><span class="text-[9px] text-yellow-400">12 CAM · 2 ALERT</span></div>
+          <div class="map-zone"><i data-lucide="landmark" class="w-4 h-4 text-emerald-400"></i><span>Admin Building</span><span class="text-[9px] text-emerald-400">5 CAM · 0 ALERT</span></div>
+
+          <div class="map-zone moderate"><i data-lucide="clipboard-list" class="w-4 h-4 text-yellow-400"></i><span>Exam Cell</span><span class="text-[9px] text-yellow-400">3 CAM · 1 ALERT</span></div>
+          <div class="map-zone path"><i data-lucide="trees" class="w-4 h-4 text-emerald-500"></i><span>Green Zone</span></div>
+          <div class="map-zone"><i data-lucide="book-open" class="w-4 h-4 text-emerald-400"></i><span>Library</span><span class="text-[9px] text-emerald-400">4 CAM · 0 ALERT</span></div>
+          <div class="map-zone critical"><i data-lucide="car-front" class="w-4 h-4 text-red-400"></i><span>Parking Area</span><span class="text-[9px] text-red-400">6 CAM · 3 ALERT</span></div>
+
+          <div class="map-zone"><i data-lucide="building" class="w-4 h-4 text-emerald-400"></i><span>Hostel B</span><span class="text-[9px] text-emerald-400">8 CAM · 0 ALERT</span></div>
+          <div class="map-zone path"><i data-lucide="route" class="w-4 h-4 text-slate-600"></i><span>Campus Walkway</span></div>
+          <div class="map-zone moderate"><i data-lucide="building-2" class="w-4 h-4 text-yellow-400"></i><span>Hostel A</span><span class="text-[9px] text-yellow-400">8 CAM · 1 ALERT</span></div>
+          <div class="map-zone path"><i data-lucide="trees" class="w-4 h-4 text-emerald-500"></i><span>Open Grounds</span></div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+          <div class="bg-slate-800/50 p-3 rounded-lg">
+            <div class="text-[10px] text-slate-500">Mapped Zones</div>
+            <div class="text-xl font-bold mt-1">8</div>
+          </div>
+          <div class="bg-slate-800/50 p-3 rounded-lg">
+            <div class="text-[10px] text-slate-500">Active Cameras</div>
+            <div class="text-xl font-bold mt-1 text-emerald-400">124</div>
+          </div>
+          <div class="bg-slate-800/50 p-3 rounded-lg">
+            <div class="text-[10px] text-slate-500">Zones at Risk</div>
+            <div class="text-xl font-bold mt-1 text-yellow-400">3</div>
+          </div>
+          <div class="bg-slate-800/50 p-3 rounded-lg">
+            <div class="text-[10px] text-slate-500">Active Zone Alerts</div>
+            <div class="text-xl font-bold mt-1 text-red-400">7</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- AI INSIGHTS -->
+    <section id="ai-insights">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h2 class="section-heading flex items-center gap-2">
+            <i data-lucide="brain-circuit" class="w-5 h-5 text-blue-400"></i>
+            AI-Powered Insights
+          </h2>
+          <p class="section-subtitle">Automated pattern recognition and actionable recommendations</p>
+        </div>
+        <span class="badge badge-blue">AI GENERATED</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+        <div class="insight-card rounded-xl p-4">
+          <div class="flex justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="car-front" class="w-4 h-4 text-yellow-400"></i>
+              <span class="text-[11px] font-semibold text-slate-200">Recurring Congestion Pattern</span>
+            </div>
+            <span class="badge badge-yellow">Attention</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed mt-3">Parking area shows recurring congestion between 5 PM and 7 PM. Density peaks are consistently higher during evening departure hours.</p>
+          <div class="mt-3 text-[10px] text-blue-400 flex items-center gap-2"><i data-lucide="lightbulb" class="w-3 h-3"></i> Recommendation: Increase monitoring during peak departure hours.</div>
+        </div>
+
+        <div class="insight-card rounded-xl p-4">
+          <div class="flex justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="building-2" class="w-4 h-4 text-orange-400"></i>
+              <span class="text-[11px] font-semibold text-slate-200">Hostel A Crowd Analysis</span>
+            </div>
+            <span class="badge badge-yellow">Monitor</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed mt-3">Hostel A reports 23% higher crowd alerts compared to last week. Increased movement is observed around common areas during evening hours.</p>
+          <div class="mt-3 text-[10px] text-blue-400 flex items-center gap-2"><i data-lucide="lightbulb" class="w-3 h-3"></i> Recommendation: Review evening corridor traffic patterns.</div>
+        </div>
+
+        <div class="insight-card rounded-xl p-4">
+          <div class="flex justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="book-open" class="w-4 h-4 text-emerald-400"></i>
+              <span class="text-[11px] font-semibold text-slate-200">Safest Campus Zone</span>
+            </div>
+            <span class="badge badge-green">Positive</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed mt-3">Library remains the safest monitored zone with a risk score of 12/100. No significant security anomalies have been recorded during the current monitoring period.</p>
+          <div class="mt-3 text-[10px] text-blue-400 flex items-center gap-2"><i data-lucide="lightbulb" class="w-3 h-3"></i> Recommendation: Maintain current monitoring configuration.</div>
+        </div>
+
+        <div class="insight-card rounded-xl p-4">
+          <div class="flex justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="clipboard-list" class="w-4 h-4 text-red-400"></i>
+              <span class="text-[11px] font-semibold text-slate-200">Examination Cell Risk</span>
+            </div>
+            <span class="badge badge-red">Priority</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed mt-3">Examination Cell requires additional monitoring during peak hours. Recent restricted-zone access events indicate a need for closer supervision.</p>
+          <div class="mt-3 text-[10px] text-blue-400 flex items-center gap-2"><i data-lucide="lightbulb" class="w-3 h-3"></i> Recommendation: Verify access permissions and review camera coverage.</div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- RECENT INCIDENTS TABLE -->
+    <section id="reports">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div>
+          <h2 class="section-heading">Recent Security Incidents</h2>
+          <p class="section-subtitle">Consolidated incident records and response status</p>
+        </div>
+        <button onclick="exportIncidents()" class="flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-white/5 rounded-lg text-xs text-slate-300 transition">
+          <i data-lucide="download" class="w-3 h-3"></i> Export CSV
+        </button>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left min-w-[750px]" id="incidentTable">
+            <thead>
+              <tr class="bg-slate-800/70 border-b border-white/5 text-[10px] uppercase tracking-wider text-slate-500">
+                <th class="p-4 font-semibold">Time</th>
+                <th class="p-4 font-semibold">Camera ID</th>
+                <th class="p-4 font-semibold">Event Type</th>
+                <th class="p-4 font-semibold">Location</th>
+                <th class="p-4 font-semibold">Confidence</th>
+                <th class="p-4 font-semibold">Priority</th>
+                <th class="p-4 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-xs">
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">12:43 PM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-031</td>
+                <td class="p-4 text-slate-200">Unauthorized Entry</td>
+                <td class="p-4 text-slate-400">Examination Cell</td>
+                <td class="p-4 text-slate-300">97.8%</td>
+                <td class="p-4"><span class="badge badge-red">Critical</span></td>
+                <td class="p-4"><span class="badge badge-yellow">Pending</span></td>
+              </tr>
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">12:38 PM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-002</td>
+                <td class="p-4 text-slate-200">Crowd Density</td>
+                <td class="p-4 text-slate-400">Main Gate</td>
+                <td class="p-4 text-slate-300">94.2%</td>
+                <td class="p-4"><span class="badge badge-yellow">Medium</span></td>
+                <td class="p-4"><span class="badge badge-green">Monitoring</span></td>
+              </tr>
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">11:56 AM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-018</td>
+                <td class="p-4 text-slate-200">Fall Detection</td>
+                <td class="p-4 text-slate-400">Hostel A</td>
+                <td class="p-4 text-slate-300">91.6%</td>
+                <td class="p-4"><span class="badge badge-red">High</span></td>
+                <td class="p-4"><span class="badge badge-green">Resolved</span></td>
+              </tr>
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">11:42 AM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-003</td>
+                <td class="p-4 text-slate-200">Abnormal Activity</td>
+                <td class="p-4 text-slate-400">Parking Area</td>
+                <td class="p-4 text-slate-300">88.9%</td>
+                <td class="p-4"><span class="badge badge-yellow">Medium</span></td>
+                <td class="p-4"><span class="badge badge-yellow">Investigating</span></td>
+              </tr>
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">10:28 AM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-014</td>
+                <td class="p-4 text-slate-200">Crowd Density</td>
+                <td class="p-4 text-slate-400">Academic Block</td>
+                <td class="p-4 text-slate-300">93.5%</td>
+                <td class="p-4"><span class="badge badge-yellow">Medium</span></td>
+                <td class="p-4"><span class="badge badge-green">Resolved</span></td>
+              </tr>
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">09:15 AM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-026</td>
+                <td class="p-4 text-slate-200">Unauthorized Entry</td>
+                <td class="p-4 text-slate-400">Hostel A</td>
+                <td class="p-4 text-slate-300">96.1%</td>
+                <td class="p-4"><span class="badge badge-red">High</span></td>
+                <td class="p-4"><span class="badge badge-green">Resolved</span></td>
+              </tr>
+
+              <tr class="incident-row">
+                <td class="p-4 text-slate-400">08:42 AM</td>
+                <td class="p-4 text-blue-400 font-medium">CAM-009</td>
+                <td class="p-4 text-slate-200">Fall Detection</td>
+                <td class="p-4 text-slate-400">Academic Block</td>
+                <td class="p-4 text-slate-300">89.7%</td>
+                <td class="p-4"><span class="badge badge-red">High</span></td>
+                <td class="p-4"><span class="badge badge-green">Resolved</span></td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-4 border-t border-white/5 flex flex-wrap justify-between gap-2 text-[10px] text-slate-500">
+          <span>Showing 7 of 24 recorded incidents</span>
+          <span>Data period: Today · Sample dashboard data</span>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SYSTEM HEALTH -->
+    <section id="system-health">
+      <div class="mb-4">
+        <h2 class="section-heading">System Health & Infrastructure</h2>
+        <p class="section-subtitle">Platform performance, AI processing and camera connectivity</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <div class="card p-5 lg:col-span-2">
+          <div class="flex justify-between items-center mb-5">
+            <h3 class="text-sm font-semibold">Infrastructure Status</h3>
+            <span class="badge badge-green"><span class="status-dot"></span> ALL SYSTEMS NORMAL</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-300 flex items-center gap-2"><i data-lucide="brain-circuit" class="w-4 h-4 text-blue-400"></i> AI Engine Status</span>
+                <span class="text-[10px] text-emerald-400 font-semibold">Operational</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill bg-emerald-500" style="width:98%"></div></div>
+              <div class="text-[10px] text-slate-500 mt-1">98% processing availability</div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-300 flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-blue-400"></i> Detection Accuracy</span>
+                <span class="text-[10px] text-emerald-400 font-semibold">96.8%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill bg-blue-500" style="width:96.8%"></div></div>
+              <div class="text-[10px] text-slate-500 mt-1">Model evaluation benchmark</div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-300 flex items-center gap-2"><i data-lucide="camera" class="w-4 h-4 text-blue-400"></i> Camera Connectivity</span>
+                <span class="text-[10px] text-emerald-400 font-semibold">96.9%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill bg-emerald-500" style="width:96.9%"></div></div>
+              <div class="text-[10px] text-slate-500 mt-1">124 of 128 cameras online</div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-300 flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-blue-400"></i> Processing Latency</span>
+                <span class="text-[10px] text-emerald-400 font-semibold">142 ms</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill bg-blue-500" style="width:88%"></div></div>
+              <div class="text-[10px] text-slate-500 mt-1">Target: under 200 ms</div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-300 flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-blue-400"></i> Storage Utilization</span>
+                <span class="text-[10px] text-yellow-400 font-semibold">68%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill bg-yellow-500" style="width:68%"></div></div>
+              <div class="text-[10px] text-slate-500 mt-1">680 GB of 1 TB allocated</div>
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs text-slate-300 flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 text-blue-400"></i> Alert Delivery</span>
+                <span class="text-[10px] text-emerald-400 font-semibold">99.2%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill bg-emerald-500" style="width:99.2%"></div></div>
+              <div class="text-[10px] text-slate-500 mt-1">Notification delivery success rate</div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card p-5">
+          <h3 class="text-sm font-semibold mb-4">Platform Diagnostics</h3>
+
+          <div class="space-y-4">
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-400"><i data-lucide="cpu" class="w-4 h-4"></i></div>
+                <div><div class="text-xs text-slate-200">AI Processing</div><div class="text-[10px] text-slate-500">Inference service</div></div>
+              </div>
+              <span class="badge badge-green">Online</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-400"><i data-lucide="database" class="w-4 h-4"></i></div>
+                <div><div class="text-xs text-slate-200">Database</div><div class="text-[10px] text-slate-500">Data services</div></div>
+              </div>
+              <span class="badge badge-green">Online</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-400"><i data-lucide="network" class="w-4 h-4"></i></div>
+                <div><div class="text-xs text-slate-200">Network</div><div class="text-[10px] text-slate-500">CCTV integration</div></div>
+              </div>
+              <span class="badge badge-green">Stable</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-yellow-500/10 rounded-lg flex items-center justify-center text-yellow-400"><i data-lucide="hard-drive" class="w-4 h-4"></i></div>
+                <div><div class="text-xs text-slate-200">Storage</div><div class="text-[10px] text-slate-500">Data retention</div></div>
+              </div>
+              <span class="badge badge-yellow">68% Used</span>
+            </div>
+
+            <div class="border-t border-white/5 pt-4">
+              <div class="text-[10px] text-slate-500 mb-2">LAST SYSTEM DIAGNOSTIC</div>
+              <div class="text-xs text-slate-300 flex items-center gap-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                All checks passed successfully
+              </div>
+              <div class="text-[10px] text-slate-600 mt-2">Today, 12:40:15 PM</div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/5 pt-6 pb-3">
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-600/20 flex items-center justify-center">
+            <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
+          </div>
+          <span class="text-xs font-semibold text-slate-400">Drishti AI</span>
+          <span class="text-[10px] text-slate-600">© 2026 | Intelligent Campus Safety Platform</span>
+        </div>
+        <div class="flex items-center gap-4 text-[10px] text-slate-600">
+          <span>Enterprise Security</span>
+          <span>·</span>
+          <span>AI-Powered Monitoring</span>
+          <span>·</span>
+          <span>v1.0.0</span>
+        </div>
+      </div>
+      <div class="text-center text-[9px] text-slate-700 mt-5">
+        Dashboard demonstration · All displayed surveillance metrics and incidents are simulated sample data.
+      </div>
+    </footer>
+
+  </div>
+</main>
+
+
+<!-- TOAST -->
+<!-- TOAST & LIVE SOC ALERT POPUP -->
+<div id="toast" class="fixed bottom-6 right-6 z-[200] w-[92vw] max-w-[430px] rounded-2xl p-5 text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.65)] opacity-0 translate-y-6 pointer-events-none transition-all duration-300 border border-blue-500/40 bg-slate-900/95 backdrop-blur-xl">
+  <div class="flex items-start gap-4">
+    <div id="toastIconWrap" class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+      <i id="toastIcon" data-lucide="check-circle-2" class="w-6 h-6 text-emerald-400"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between gap-2">
+        <span id="toastTitle" class="text-xs font-bold uppercase tracking-wider text-emerald-400">System Notification</span>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="toastMessage" class="text-sm font-semibold text-white mt-1 leading-snug">Action completed</div>
+      <div id="toastSubtext" class="text-xs text-slate-400 mt-1 hidden"></div>
+      <div id="toastActions" class="mt-3 hidden flex items-center gap-2">
+        <a href="#incidents" onclick="hideToast()" class="px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold transition">
+          View in Incident Feed
+        </a>
+        <button onclick="acknowledgeAll(); hideToast();" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-medium transition">
+          Acknowledge
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ==========================================
+// 1. BACKEND CONFIGURATION & STATE
+// ==========================================
+const API_BASE_URL = window.location.origin.includes('http')
+  ? window.location.origin
+  : 'http://localhost:8000';
+
+const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws');
+
+let authToken = localStorage.getItem('drishti_access_token') || null;
+let chartInstances = {};
+let alertSocket = null;
+
+lucide.createIcons();
+
+// Helper for authenticated API calls with graceful fallback
+async function apiRequest(endpoint, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error ${response.status} on ${endpoint}`);
+  }
+  return response.json();
+}
+
+// ==========================================
+// 2. CLOCK & NAVIGATION
+// ==========================================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('currentTime').textContent =
+    now.toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+
+  document.getElementById('currentDate').textContent =
+    now.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+  item.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.nav-item[data-section]').forEach(nav => nav.classList.remove('active'));
+    this.classList.add('active');
+    const target = document.getElementById(this.dataset.section);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.innerWidth <= 768) toggleSidebar();
+  });
+});
+
+const sectionObserver = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const nav = document.querySelector(`.nav-item[data-section="${entry.target.id}"]`);
+      if (nav) {
+        document.querySelectorAll('.nav-item[data-section]').forEach(item => item.classList.remove('active'));
+        nav.classList.add('active');
+      }
+    }
+  });
+}, { threshold: 0.12, rootMargin: '-70px 0px -60% 0px' });
+
+document.querySelectorAll('main section[id]').forEach(section => sectionObserver.observe(section));
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mobileOverlay').classList.toggle('show');
+}
+
+// ==========================================
+// 3. DROPDOWNS & TOASTS
+// ==========================================
+function toggleDropdown(id) {
+  const element = document.getElementById(id);
+  const wasOpen = element.classList.contains('show');
+  document.querySelectorAll('.dropdown, .notification-panel').forEach(drop => drop.classList.remove('show'));
+  if (!wasOpen) element.classList.add('show');
+}
+
+function toggleCollege() { toggleDropdown('collegeDropdown'); }
+function toggleProfile() { toggleDropdown('profileDropdown'); }
+function toggleNotifications() { toggleDropdown('notificationPanel'); }
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.relative')) {
+    document.querySelectorAll('.dropdown, .notification-panel').forEach(drop => drop.classList.remove('show'));
+  }
+});
+
+function selectCollege(name) {
+  document.querySelector('header button span.hidden.sm\\:inline').textContent = name;
+  document.getElementById('collegeDropdown').classList.remove('show');
+  showToast('Institution switched to ' + name);
+  refreshDashboard();
+}
+async function simulateLiveAIAlert() {
+  try {
+    await apiRequest('/api/ai/simulate', { method: 'POST' });
+    await Promise.allSettled([
+      loadDashboardOverview(),
+      loadRiskZones(),
+      loadIncidents(),
+      syncAnalyticsCharts()
+    ]);
+  } catch (err) {
+    showToast('Failed to trigger AI simulation: ' + err.message);
+  }
+}
+
+async function markRead() {
+  try {
+    await apiRequest('/api/notifications/mark-read', { method: 'POST' });
+  } catch (_) {}
+  document.getElementById('notificationPanel').classList.remove('show');
+  const badge = document.querySelector('header button .absolute');
+  if (badge) badge.style.display = 'none';
+  showToast('Notifications marked as read');
+}
+
+let toastTimeout;
+
+function hideToast() {
+  const toast = document.getElementById('toast');
+  toast.classList.add('opacity-0', 'translate-y-6', 'pointer-events-none');
+}
+
+function showToast(message, options = {}) {
+  const {
+    title = 'System Update',
+    subtext = '',
+    type = 'info', // 'info' or 'critical'
+    duration = type === 'critical' ? 12000 : 5000
+  } = options;
+
+  const toast = document.getElementById('toast');
+  const titleEl = document.getElementById('toastTitle');
+  const msgEl = document.getElementById('toastMessage');
+  const subEl = document.getElementById('toastSubtext');
+  const iconWrap = document.getElementById('toastIconWrap');
+  const actionsEl = document.getElementById('toastActions');
+
+  titleEl.textContent = title;
+  msgEl.textContent = message;
+
+  if (subtext) {
+    subEl.textContent = subtext;
+    subEl.classList.remove('hidden');
+  } else {
+    subEl.classList.add('hidden');
+  }
+
+  if (type === 'critical') {
+    toast.className = 'fixed bottom-6 right-6 z-[200] w-[92vw] max-w-[440px] rounded-2xl p-5 text-slate-100 shadow-[0_20px_60px_rgba(239,68,68,0.35)] transition-all duration-300 border-2 border-red-500/80 bg-slate-900/95 backdrop-blur-xl';
+    titleEl.className = 'text-xs font-extrabold uppercase tracking-wider text-red-400 flex items-center gap-1.5';
+    iconWrap.className = 'w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0 animate-pulse';
+    iconWrap.innerHTML = '<i data-lucide="siren" class="w-6 h-6 text-red-400"></i>';
+    actionsEl.classList.remove('hidden');
+  } else {
+    toast.className = 'fixed bottom-6 right-6 z-[200] w-[92vw] max-w-[400px] rounded-2xl p-4 text-slate-100 shadow-2xl transition-all duration-300 border border-emerald-500/30 bg-slate-900/95 backdrop-blur-xl';
+    titleEl.className = 'text-xs font-bold uppercase tracking-wider text-emerald-400';
+    iconWrap.className = 'w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0';
+    iconWrap.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>';
+    actionsEl.classList.add('hidden');
+  }
+
+  lucide.createIcons();
+  toast.classList.remove('opacity-0', 'translate-y-6', 'pointer-events-none');
+
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(hideToast, duration);
+}
+
+// ==========================================
+// 4. KPI OVERVIEW & RISK HEATMAP SYNC
+// ==========================================
+async function loadDashboardOverview() {
+  try {
+    const data = await apiRequest('/api/dashboard/overview');
+    const kpiValues = document.querySelectorAll('.metric-value');
+    if (kpiValues.length >= 6) {
+      kpiValues[0].textContent = String(data.total_cameras ?? 128);
+      kpiValues[1].textContent = String(data.active_alerts ?? 7).padStart(2, '0');
+      kpiValues[2].textContent = String(data.crowd_alerts ?? 14).padStart(2, '0');
+      kpiValues[3].textContent = String(data.unauthorized_entries ?? 5).padStart(2, '0');
+      kpiValues[4].textContent = String(data.fall_detections ?? 2).padStart(2, '0');
+      kpiValues[5].textContent = String(data.campus_safety_score ?? 92);
+    }
+
+    // Update sidebar and bell counters
+    const sidebarAlertBadge = document.querySelector('a[data-section="incidents"] span');
+    if (sidebarAlertBadge && data.active_alerts !== undefined) {
+      sidebarAlertBadge.textContent = data.active_alerts;
+    }
+    const bellBadge = document.querySelector('header button .absolute');
+    if (bellBadge && data.active_alerts !== undefined) {
+      bellBadge.textContent = data.active_alerts;
+    }
+  } catch (err) {
+    console.warn('Using fallback KPI values:', err.message);
+  }
+}
+
+async function loadRiskZones() {
+  try {
+    const zones = await apiRequest('/api/risk/zones');
+    if (!Array.isArray(zones) || zones.length === 0) return;
+
+    const zoneCards = document.querySelectorAll('#risk-zones .zone-card');
+    zones.slice(0, zoneCards.length).forEach((z, idx) => {
+      const card = zoneCards[idx];
+      const status = (z.status || 'safe').toLowerCase();
+      const colorClass = status === 'critical' ? 'risk-critical' : (status === 'moderate' ? 'risk-moderate' : 'risk-safe');
+      const badgeClass = status === 'critical' ? 'badge-red' : (status === 'moderate' ? 'badge-yellow' : 'badge-green');
+      const barClass = status === 'critical' ? 'bg-red-500' : (status === 'moderate' ? 'bg-yellow-500' : 'bg-emerald-500');
+
+      const badgeEl = card.querySelector('.badge');
+      if (badgeEl) {
+        badgeEl.className = `badge ${badgeClass}`;
+        badgeEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      }
+
+      const titleEl = card.querySelector('.text-sm.font-semibold');
+      if (titleEl) titleEl.textContent = z.zone;
+
+      const scoreEl = card.querySelector('.text-2xl.font-bold');
+      if (scoreEl) {
+        scoreEl.className = `text-2xl font-bold ${colorClass}`;
+        scoreEl.innerHTML = `${z.risk_score}<span class="text-xs">/100</span>`;
+      }
+
+      const camCountEl = card.querySelector('.text-\\[10px\\].text-slate-500');
+      if (camCountEl && z.cameras !== undefined) {
+        camCountEl.textContent = `${z.cameras} Cameras`;
+      }
+
+      const fillEl = card.querySelector('.risk-fill');
+      if (fillEl) {
+        fillEl.className = `risk-fill ${barClass}`;
+        fillEl.style.width = `${Math.min(100, z.risk_score)}%`;
+      }
+    });
+  } catch (err) {
+    console.warn('Using fallback risk heatmap:', err.message);
+  }
+}
+
+// ==========================================
+// 5. LIVE CAMERAS & INCIDENTS SYNC
+// ==========================================
+async function loadCameras(riskFilter = 'all') {
+  try {
+    const query = riskFilter && riskFilter !== 'all' ? `?risk_level=${riskFilter}` : '';
+    const cameras = await apiRequest(`/api/cameras${query}`);
+    if (!Array.isArray(cameras) || cameras.length === 0) return;
+
+    const cards = document.querySelectorAll('#cameraGrid .camera-card');
+    cameras.slice(0, cards.length).forEach((cam, idx) => {
+      const card = cards[idx];
+      const risk = (cam.risk_level || 'safe').toLowerCase();
+      card.dataset.risk = risk;
+
+      const camIdBadge = card.querySelector('.camera-preview .top-3.right-3');
+      if (camIdBadge) camIdBadge.textContent = cam.camera_id;
+
+      const titleEl = card.querySelector('h3');
+      if (titleEl) titleEl.textContent = cam.camera_name || cam.location;
+
+      const peopleCountEl = card.querySelector('b.text-white');
+      if (peopleCountEl) peopleCountEl.textContent = String(cam.people_count ?? 0).padStart(2, '0');
+    });
+  } catch (err) {
+    console.warn('Using fallback camera feeds:', err.message);
+  }
+}
+
+function renderIncidentRowHTML(inc) {
+  const sev = (inc.severity || 'moderate').toLowerCase();
+  const isCrit = sev === 'critical' || sev === 'high';
+  const badgeClass = isCrit ? 'badge-red' : 'badge-yellow';
+  const iconBg = isCrit ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400';
+  const iconName = inc.event_type.toLowerCase().includes('crowd')
+    ? 'users'
+    : (inc.event_type.toLowerCase().includes('fall') ? 'activity' : 'alert-triangle');
+
+  const statusText = inc.status || 'Pending';
+  const statusBadge = statusText === 'Resolved' || statusText === 'Acknowledged' || statusText === 'Monitoring'
+    ? 'badge-green'
+    : 'badge-yellow';
+
+  const timeFormatted = inc.timestamp
+    ? new Date(inc.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+    : 'Just now';
+
+  return `
+    <div class="incident-row flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-lg ${isCrit ? 'border border-red-500/10 bg-red-500/[.035]' : ''}">
+      <div class="w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center shrink-0">
+        <i data-lucide="${iconName}" class="w-5 h-5"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-white">${inc.event_type}</span>
+          <span class="badge ${badgeClass}">${sev.charAt(0).toUpperCase() + sev.slice(1)}</span>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-1">${inc.location} · ${inc.camera_id} · ${inc.description || 'AI security event'}</div>
+        <div class="text-[10px] text-slate-600 mt-1">Today, ${timeFormatted} · AI Confidence: ${Number(inc.confidence).toFixed(1)}%</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="w-14 h-12 rounded bg-slate-800 border border-white/5 flex items-center justify-center">
+          <i data-lucide="image" class="w-5 h-5 text-slate-600"></i>
+        </div>
+        <span class="badge ${statusBadge} incident-status">${statusText}</span>
+      </div>
+    </div>
+  `;
+}
+
+async function loadIncidents() {
+  try {
+    const liveIncidents = await apiRequest('/api/incidents/live?limit=6');
+    const items = Array.isArray(liveIncidents) ? liveIncidents : (liveIncidents.items || []);
+    if (items.length === 0) return;
+
+    // 1. Update Live Incident Feed
+    const feedEl = document.getElementById('incidentFeed');
+    if (feedEl) {
+      feedEl.innerHTML = items.slice(0, 4).map(renderIncidentRowHTML).join('');
+    }
+
+    // 2. Update Recent Security Incidents Table
+    const tbody = document.querySelector('#incidentTable tbody');
+    if (tbody) {
+      tbody.innerHTML = items.map(inc => {
+        const sev = (inc.severity || 'moderate').toLowerCase();
+        const prioBadge = (sev === 'critical' || sev === 'high') ? 'badge-red' : 'badge-yellow';
+        const stBadge = (inc.status === 'Resolved' || inc.status === 'Monitoring' || inc.status === 'Acknowledged')
+          ? 'badge-green'
+          : 'badge-yellow';
+        const timeStr = inc.timestamp
+          ? new Date(inc.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+          : 'Just now';
+
+        return `
+          <tr class="incident-row">
+            <td class="p-4 text-slate-400">${timeStr}</td>
+            <td class="p-4 text-blue-400 font-medium">${inc.camera_id}</td>
+            <td class="p-4 text-slate-200">${inc.event_type}</td>
+            <td class="p-4 text-slate-400">${inc.location}</td>
+            <td class="p-4 text-slate-300">${Number(inc.confidence).toFixed(1)}%</td>
+            <td class="p-4"><span class="badge ${prioBadge}">${sev.charAt(0).toUpperCase() + sev.slice(1)}</span></td>
+            <td class="p-4"><span class="badge ${stBadge}">${inc.status || 'Pending'}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    lucide.createIcons();
+  } catch (err) {
+    console.warn('Using fallback incidents list:', err.message);
+  }
+}
+
+// ==========================================
+// 6. CHART.JS INITIALIZATION & API SYNC
+// ==========================================
+Chart.defaults.color = '#94A3B8';
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.font.size = 10;
+
+const gridColor = 'rgba(148,163,184,0.09)';
+const commonScales = {
+  x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748B' } },
+  y: { grid: { color: gridColor }, border: { display: false }, ticks: { color: '#64748B', padding: 8 }, beginAtZero: true }
+};
+const commonTooltip = {
+  backgroundColor: '#1E293B',
+  titleColor: '#F8FAFC',
+  bodyColor: '#CBD5E1',
+  borderColor: 'rgba(255,255,255,.1)',
+  borderWidth: 1,
+  padding: 12,
+  displayColors: true,
+  cornerRadius: 8
+};
+
+function initCharts() {
+  chartInstances.incident = new Chart(document.getElementById('incidentChart'), {
+    type: 'line',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      datasets: [
+        {
+          label: 'Crowd Alerts',
+          data: [8, 12, 9, 15, 11, 17, 14],
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59,130,246,.10)',
+          tension: .4,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2
+        },
+        {
+          label: 'Security Incidents',
+          data: [3, 5, 2, 6, 4, 7, 5],
+          borderColor: '#F59E0B',
+          backgroundColor: 'transparent',
+          tension: .4,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 7, padding: 18 } }, tooltip: commonTooltip },
+      scales: commonScales
+    }
+  });
+
+  chartInstances.distribution = new Chart(document.getElementById('distributionChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Crowd', 'Intrusion', 'Fall', 'Abnormal Activity'],
+      datasets: [{
+        data: [14, 5, 2, 6],
+        backgroundColor: ['#3B82F6', '#EF4444', '#A78BFA', '#F59E0B'],
+        borderColor: '#1E293B',
+        borderWidth: 4,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { position: 'right', labels: { color: '#94A3B8', usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 17, font: { size: 10 } } },
+        tooltip: commonTooltip
+      }
+    }
+  });
+
+  chartInstances.crowd = new Chart(document.getElementById('crowdChart'), {
+    type: 'line',
+    data: {
+      labels: ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
+      datasets: [{
+        label: 'Estimated People',
+        data: [120, 280, 450, 620, 710, 580, 480, 560, 780, 640],
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16,185,129,.13)',
+        fill: true,
+        tension: .4,
+        borderWidth: 2,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: { legend: { display: false }, tooltip: commonTooltip },
+      scales: commonScales
+    }
+  });
+
+  chartInstances.risk = new Chart(document.getElementById('riskChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Main Gate', 'Library', 'Parking', 'Hostel A', 'Hostel B', 'Academic', 'Admin', 'Exam Cell'],
+      datasets: [{
+        label: 'Risk Score',
+        data: [18, 12, 78, 46, 24, 52, 21, 61],
+        backgroundColor: ['#10B981', '#10B981', '#EF4444', '#F59E0B', '#10B981', '#F59E0B', '#10B981', '#F59E0B'],
+        borderRadius: 5,
+        barThickness: 18
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: commonTooltip },
+      scales: { ...commonScales, y: { ...commonScales.y, max: 100, ticks: { stepSize: 20, color: '#64748B' } } }
+    }
+  });
+}
+
+async function syncAnalyticsCharts() {
+  const endpoints = [
+    { key: 'incident', url: '/api/analytics/incidents' },
+    { key: 'distribution', url: '/api/analytics/distribution' },
+    { key: 'crowd', url: '/api/analytics/crowd' },
+    { key: 'risk', url: '/api/analytics/risk' }
+  ];
+
+  for (const item of endpoints) {
+    try {
+      const chartData = await apiRequest(item.url);
+      if (chartData && chartData.labels && chartData.datasets && chartInstances[item.key]) {
+        chartInstances[item.key].data.labels = chartData.labels;
+        chartData.datasets.forEach((ds, idx) => {
+          if (chartInstances[item.key].data.datasets[idx]) {
+            Object.assign(chartInstances[item.key].data.datasets[idx], ds);
+          }
+        });
+        chartInstances[item.key].update();
+      }
+    } catch (_) {}
+  }
+}
+
+// ==========================================
+// 7. REAL-TIME WEBSOCKET ALERTS (/ws/alerts)
+// ==========================================
+function connectWebSocket() {
+  try {
+    alertSocket = new WebSocket(`${WS_BASE_URL}/ws/alerts`);
+
+    alertSocket.onopen = () => {
+      console.log('Drishti AI WebSocket connected');
+    };
+
+    alertSocket.onmessage = (event) => {
+      try {
+        const alert = JSON.parse(event.data);
+        if (alert.event === 'pong') return;
+
+        const formattedTitle = (alert.event || 'security_alert')
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+
+        showToast(`${formattedTitle} Detected`, {
+          title: `🚨 CRITICAL AI SECURITY ALERT · ${(alert.severity || 'CRITICAL').toUpperCase()}`,
+          subtext: `Location: ${alert.location} · Camera: ${alert.camera_id || 'CAM-031'} · AI Confidence: ${alert.confidence}%`,
+          type: 'critical',
+          duration: 12000 // Stays visible for 12 full seconds
+        });
+
+        // Also add to top-right Notification Bell dropdown list
+        const notifList = document.querySelector('#notificationPanel .p-3.space-y-3');
+        if (notifList) {
+          notifList.insertAdjacentHTML('afterbegin', `
+            <div class="flex gap-3 bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 mt-1 shrink-0"></i>
+              <div>
+                <p class="text-xs font-semibold text-white">${formattedTitle}</p>
+                <p class="text-[10px] text-slate-400">${alert.location} · Just now (${alert.confidence}%)</p>
+              </div>
+            </div>
+          `);
+          lucide.createIcons();
+        }
+
+        // Prepend to Live Incident Feed
+        const feedEl = document.getElementById('incidentFeed');
+        if (feedEl) {
+          const newHtml = renderIncidentRowHTML({
+            event_type: formattedTitle,
+            location: alert.location,
+            camera_id: alert.camera_id || 'CAM-LIVE',
+            severity: alert.severity || 'critical',
+            confidence: alert.confidence || 95.0,
+            description: 'Real-time AI WebSocket stream detection',
+            status: 'Pending',
+            timestamp: alert.timestamp || new Date().toISOString()
+          });
+          feedEl.insertAdjacentHTML('afterbegin', newHtml);
+          lucide.createIcons();
+        }
+
+        // Increment Active Alert KPI & Bell Counter
+        loadDashboardOverview();
+      } catch (e) {
+        console.error('WebSocket payload error:', e);
+      }
+    };
+
+    alertSocket.onclose = () => {
+      setTimeout(connectWebSocket, 5000);
+    };
+  } catch (err) {
+    console.warn('WebSocket connection deferred:', err.message);
+  }
+}
+
+// ==========================================
+// 8. USER ACTIONS (REFRESH, FILTER, SEARCH, CSV)
+// ==========================================
+async function refreshDashboard() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('animate-spin');
+
+  await Promise.allSettled([
+    loadDashboardOverview(),
+    loadRiskZones(),
+    loadCameras(),
+    loadIncidents(),
+    syncAnalyticsCharts()
+  ]);
+
+  setTimeout(() => {
+    icon.classList.remove('animate-spin');
+    showToast('Dashboard synced with Drishti AI Backend');
+  }, 500);
+}
+
+function toggleCameraFilter() {
+  document.getElementById('cameraFilter').classList.toggle('hidden');
+}
+
+function filterCameras(risk) {
+  document.querySelectorAll('.camera-card').forEach(card => {
+    card.style.display = (risk === 'all' || card.dataset.risk === risk) ? '' : 'none';
+  });
+  loadCameras(risk);
+}
+
+function globalSearch(query) {
+  const value = query.toLowerCase().trim();
+  document.querySelectorAll('.camera-card').forEach(card => {
+    card.style.display = card.textContent.toLowerCase().includes(value) ? '' : 'none';
+  });
+  document.querySelectorAll('#incidentFeed .incident-row').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(value) ? '' : 'none';
+  });
+  document.querySelectorAll('#incidentTable tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(value) ? '' : 'none';
+  });
+}
+
+async function acknowledgeAll() {
+  try {
+    await apiRequest('/api/incidents/acknowledge-all', { method: 'POST' });
+  } catch (_) {}
+
+  document.querySelectorAll('#incidentFeed .incident-status').forEach(status => {
+    if (status.textContent.trim() === 'Pending') {
+      status.textContent = 'Acknowledged';
+      status.className = 'badge badge-green incident-status';
+    }
+  });
+  showToast('Pending incidents acknowledged');
+  loadDashboardOverview();
+}
+
+function exportIncidents() {
+  // Download directly from the backend CSV report endpoint with client fallback
+  window.open(`${API_BASE_URL}/api/reports/incidents/csv`, '_blank');
+  showToast('Incident CSV report downloaded');
+}
+
+async function logout(e) {
+  if (e) e.preventDefault();
+  try {
+    await apiRequest('/api/auth/logout', { method: 'POST' });
+  } catch (_) {}
+  localStorage.removeItem('drishti_access_token');
+  authToken = null;
+  showToast('Signed out of Drishti AI session');
+}
+
+// ==========================================
+// 9. KEYBOARD SHORTCUTS & LIVE TIMESTAMPS
+// ==========================================
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    document.getElementById('globalSearch').focus();
+  }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.dropdown, .notification-panel').forEach(drop => drop.classList.remove('show'));
+  }
+});
+
+setInterval(() => {
+  const time = new Date().toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  document.querySelectorAll('.camera-preview .absolute.bottom-3.right-3').forEach(el => {
+    el.textContent = time;
+  });
+}, 1000);
+
+// ==========================================
+// 10. BOOTSTRAP ON PAGE LOAD
+// ==========================================
+initCharts();
+refreshDashboard();
+connectWebSocket();
+</script>
+
+</body>
+</html>
